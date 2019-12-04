@@ -39,14 +39,14 @@ dataset_sizes = {t: len(image_datasets[t]) for t in ['train', 'test']}
 class_names = image_datasets['train'].classes
 
 test_image_datasets = {t: datasets.ImageFolder(f'{data_dir}/{t}', data_transforms['test']) for t in image_datasets['train'].classes}
-test_dataloaders = {t: torch.utils.data.DataLoader(test_image_datasets[t], batch_size=4, shuffle=True, num_workers=4) for t in image_datasets['train'].classes}
+test_dataloaders = {t: torch.utils.data.DataLoader(test_image_datasets[t], batch_size=1, shuffle=False, num_workers=1) for t in image_datasets['train'].classes}
 test_dataset_sizes = {t: len(test_image_datasets[t]) for t in image_datasets['train'].classes}
 
 arch_dir = './data/architecture'
 arch_classes = next(os.walk(arch_dir))[1]
 
 arch_image_datasets = {t: datasets.ImageFolder(f'{arch_dir}/{t}', data_transforms['test']) for t in arch_classes}
-arch_dataloaders = {t: torch.utils.data.DataLoader(arch_image_datasets[t], batch_size=1, shuffle=True, num_workers=1) for t in arch_classes}
+arch_dataloaders = {t: torch.utils.data.DataLoader(arch_image_datasets[t], batch_size=1, shuffle=False, num_workers=1) for t in arch_classes}
 arch_dataset_sizes = {t: len(arch_image_datasets[t]) for t in arch_classes}
 
 label_to_word = {k : v for k, v in enumerate(class_names)}
@@ -204,25 +204,27 @@ if __name__ == '__main__':
 
     result_dir = './data/results/nature'
 
-    aggregator = []
+    for item in image_datasets['train'].classes:
+        print(f'working on {item}')
+        aggregator = []
 
-    for i, (inputs, labels) in enumerate(test_dataloaders['cloud']):
-        y_hat = model_ft(inputs)
+        for i, (inputs, labels) in enumerate(test_dataloaders[item]):
+            print(f'{i}/{test_dataset_sizes[item]}')
+            y_hat = model_ft(inputs)
+            
+            guesses = torch.max(y_hat, 1)[1].numpy()
+            outputs = y_hat.detach().numpy()[0]
+            # print(f'predicted: {[label_to_word[n] for n in guesses]}')
+            # print(f'outputs: {outputs}\n')
+
+            aggregator.append(outputs.tolist())
         
-        guesses = torch.max(y_hat, 1)[1].numpy()
-        outputs = y_hat.detach().numpy()[0]
-        print(f'predicted: {[label_to_word[n] for n in guesses]}')
-        print(f'outputs: {outputs}\n')
+        A = np.array(aggregator)
 
-        aggregator.append(outputs.tolist())
-        if i == 5:
-            break
-    
-    A = np.array(aggregator)
+        np.save(f'{result_dir}/{item}', A)
+        B = np.load(f'{result_dir}/{item}.npy')
 
-    np.save(f'{result_dir}/cloud', A)
-    B = np.load(f'{result_dir}/cloud.npy')
-    pdb.set_trace()
+        pdb.set_trace()
 
 
 
