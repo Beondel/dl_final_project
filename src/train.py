@@ -202,14 +202,14 @@ if __name__ == '__main__':
     model_ft.load_state_dict(torch.load('./model.pt'))
     model_ft.eval()
 
-    result_dir = './data/results/nature'
+    result_dir = './data/results/architecture'
 
-    for item in image_datasets['train'].classes:
+    for item in arch_classes:
         print(f'working on {item}')
         aggregator = []
 
-        for i, (inputs, labels) in enumerate(test_dataloaders[item]):
-            print(f'{i}/{test_dataset_sizes[item]}')
+        for i, (inputs, labels) in enumerate(arch_dataloaders[item]):
+            print(f'{i}/{arch_dataset_sizes[item]}')
             y_hat = model_ft(inputs)
             
             guesses = torch.max(y_hat, 1)[1].numpy()
@@ -220,11 +220,7 @@ if __name__ == '__main__':
             aggregator.append(outputs.tolist())
         
         A = np.array(aggregator)
-
         np.save(f'{result_dir}/{item}', A)
-        B = np.load(f'{result_dir}/{item}.npy')
-
-        pdb.set_trace()
 
 
 
